@@ -1,12 +1,13 @@
 # Script d'entraînement du modèle 
 
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
-from sklearn.model_selection import GridSearchCV
+import lightgbm as lgb
+import joblib
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+from imblearn.over_sampling import SMOTE
 
-#Chargement et préparation
+# Chargement et préparation
 
 def load_data(path="../data/processed/processed_data.csv"):
     df = pd.read_csv(path)
@@ -24,59 +25,79 @@ def load_data(path="../data/processed/processed_data.csv"):
 
 # Séparation des données
 
-def split_data(X, y):
-    return train_test_split(X, y, test_size=0.25, random_state=42)
-
-
-# Entraînement du modèle de base
-
-def train_base_model(X_train, y_train, X_test, y_test):
-    rf = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf.fit(X_train, y_train)
-    acc = rf.score(X_test, y_test)
-    print(f"Accuracy before feature selection: {acc:.2f}")
-    return rf
-
+def split_data(X, y, smote=False):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+    if smote:
+        sm = SMOTE(random_state=42)
+        X_train, y_train = sm.fit_resample(X_train, y_train)
+    return X_train, X_test, y_train, y_test
 
 # Sélection de features importantes
 
-def select_features(rf, X_train):
-    feature_importances = pd.DataFrame({
-        'feature': X_train.columns,
-        'importance': rf.feature_importances_
-    }).sort_values(by='importance', ascending=False)
-    selected_features = feature_importances[feature_importances['importance'] >  0.01]['feature']
-    return selected_features, feature_importances
+def select_features(model, X_train, threshold=0.01):
+    importances = model.feature_importances_
+    feature_importance_df = pd.DataFrame({
+        "feature" : model.feature_name_,
+        "importance" : importances / importances.sum()
+    }).sort_values(by="importance", ascending=False)
+    selected_features = feature_importance_df[feature_importance_df["importance"] > threshold]["feature"].tolist()
+    return selected_features, feature_importance_df
 
+# Recherche d'hyperparamètres
 
-# Optimisation via GridSearch
-
-def tune_hyperparameters(X_train, y_train):
+def tune_hyperparameters(X_train, y_train, n_iter=30):
     param_grid = {
-        'n_estimators': [100, 200],
-        'max_depth': [12, 15, 20, None],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 2, 4],
-        'max_features': ['sqrt', 'log2']
+        'n_estimators': [100, 300, 500],
+        'max_depth': [8, 12, 16, -1],
+        'learning_rate': [0.01, 0.05, 0.1],
+        'num_leaves': [15, 31, 63],
+        'min_child_samples': [10, 20, 50],
+        'subsample': [0.7, 0.9, 1.0],
+        'colsample_bytree': [0.7, 0.9, 1.0]
     }
-    grid = GridSearchCV(
-        RandomForestClassifier(random_state=42),
-        param_grid,
+    lgb_model = lgb.LGBMClassifier(objective='binary', random_state=42, class_weight='balanced')
+    grid_search = RandomizedSearchCV(
+        estimator=lgb_model,
+        param_distributions=param_grid,
+        n_iter=n_iter,
+        scoring='recall',
         cv=3,
-        scoring='accuracy',
-        n_jobs=-1
+        n_jobs=-1,
+        verbose=1
     )
-    grid.fit(X_train, y_train)
-    print("Best parameters:", grid.best_params_)
-    print("Best accuracy:", grid.best_score_)
-    return grid.best_params_
+    grid_search.fit(X_train, y_train)
+    print("Best parameters:", grid_search.best_params_)
+    print("Best recall:", grid_search.best_score_)
+    return grid_search.best_params_
 
-#Entraînement final
+# Entraînement final
 
-def train_final_model(X_train, y_train, params):
-    final_model = RandomForestClassifier(
-        **params, random_state=42, n_jobs=-1
-    )
-    final_model.fit(X_train, y_train)
-    return final_model
+def train_final_model(X_train, y_train, param=None):
+    if params is None:
+        params = {
+            'subsample': 1.0,
+            'num_leaves': 31,
+            'n_estimators': 500,
+            'min_child_samples': 20,
+            'max_depth': -1,
+            'learning_rate': 0.01,
+            'colsample_bytree': 1.0,
+            'class_weight': 'balanced',
+            'random_state': 42
+        }
+    model = lgb.LGBMClassifier(**params)
+    model.fit(X_train, y_train)
+    return model
+
+# Sauvegarde
+
+def save_model(model, path="../models/lightgbm_model.pkl"):
+    joblib.dump(model, path)
+    print(f"Modèle sauvegardé dans {path}")
+
+def save_features(features, path="../models/selected_features_LGB.pkl"):
+    joblib.dump(features, path)
+    print(f"Liste des features sauvegardée dans {path}")
+
+
 
