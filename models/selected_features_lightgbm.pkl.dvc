@@ -1,0 +1,5 @@
+outs:
+- md5: db4646b95939ca872a4a377e4bda2648
+  size: 1967
+  hash: md5
+  path: selected_features_lightgbm.pkl
