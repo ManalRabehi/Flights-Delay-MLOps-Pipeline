@@ -8,7 +8,7 @@ stages:
     - data/processed/processed_data.csv
 
   train:
-    cmd: pyhton src/train_model.py
+    cmd: python src/train_model.py
     deps:
     - data/processed/processed_data.csv
     - src/train_model.py
