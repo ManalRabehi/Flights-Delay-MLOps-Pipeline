@@ -1,4 +1,5 @@
 from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+import json
 
 # Evaluation du modèle
 
@@ -16,4 +17,19 @@ def evaluate_model(model, X_test, y_test, threshold=0.5):
     print(f"Recall: {recall:.2f}")
     print("Confusion Matrix:\n", cm)
     
+    metrics_dict = {
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall
+    }
+    
+    with open("../metrics/metrics.json", "w") as f:
+        json.dump(metrics_dict,f,indent=4)
+                  
     return accuracy, precision, recall, cm
+
+    
+
+
+if __name__== "_main_":
+    evaluate_model()

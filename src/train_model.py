@@ -99,5 +99,8 @@ def save_features(features, path="../models/selected_features_LGB.pkl"):
     joblib.dump(features, path)
     print(f"Liste des features sauvegardée dans {path}")
 
+if __name__== "_main_":
+    train_final_model()
+
 
 

@@ -1,0 +1,27 @@
+stages:
+  preprocess:
+    cmd: python src/data_preparation.py
+    deps: 
+    - data/raw/flight_data_2024_sample.csv
+    - src/data_preparation.py
+    outs:
+    - data/processed/processed_data.csv
+
+  train:
+    cmd: pyhton src/train_model.py
+    deps:
+    - data/processed/processed_data.csv
+    - src/train_model.py
+    outs:
+    - models/lightgbm_model.pkl
+    - models/selected_features_lightgbm.pkl
+
+  evaluate:
+    cmd: pyhton src/evaluate_model.py
+    deps:
+    - data/processed/processed_data.csv
+    - src/evaluate_model.py
+    outs:
+    - metrics/metrics.json
+
+  
