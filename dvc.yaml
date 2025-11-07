@@ -14,13 +14,15 @@ stages:
     - src/train_model.py
     outs:
     - models/lightgbm_model.pkl
-    - models/selected_features_lightgbm.pkl
+    - models/selected_features_LGB.pkl
 
   evaluate:
-    cmd: pyhton src/evaluate_model.py
+    cmd: python src/evaluate_model.py
     deps:
     - data/processed/processed_data.csv
     - src/evaluate_model.py
+    - models/selected_features_LGB.pkl
+    - models/lightgbm_model.pkl 
     outs:
     - metrics/metrics.json
 

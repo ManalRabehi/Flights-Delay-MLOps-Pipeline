@@ -1,5 +1,6 @@
 # Script d'entraînement du modèle 
 
+import os 
 import pandas as pd
 import lightgbm as lgb
 import joblib
@@ -9,7 +10,7 @@ from imblearn.over_sampling import SMOTE
 
 # Chargement et préparation
 
-def load_data(path="../data/processed/processed_data.csv"):
+def load_data(path="data/processed/processed_data.csv"):
     df = pd.read_csv(path)
     post_flight_features = [
         'dep_delay', 'nas_delay', 'carrier_delay', 'late_aircraft_delay',
@@ -73,8 +74,8 @@ def tune_hyperparameters(X_train, y_train, n_iter=30):
 # Entraînement final
 
 def train_final_model(X_train, y_train, param=None):
-    if params is None:
-        params = {
+    if param is None:
+        param = {
             'subsample': 1.0,
             'num_leaves': 31,
             'n_estimators': 500,
@@ -85,7 +86,7 @@ def train_final_model(X_train, y_train, param=None):
             'class_weight': 'balanced',
             'random_state': 42
         }
-    model = lgb.LGBMClassifier(**params)
+    model = lgb.LGBMClassifier(**param)
     model.fit(X_train, y_train)
     return model
 
@@ -99,8 +100,20 @@ def save_features(features, path="../models/selected_features_LGB.pkl"):
     joblib.dump(features, path)
     print(f"Liste des features sauvegardée dans {path}")
 
-if __name__== "_main_":
-    train_final_model()
+if __name__== "__main__":
+    X, y = load_data()
+    X_train, X_test, y_train, y_test = split_data(X, y, smote=True)
+    model = train_final_model(X_train, y_train)
+    selected_features, feature_importance_df = select_features(model, X_train)
+    MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models")
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    MODEL_PATH = os.path.join(MODEL_DIR, "lightgbm_model.pkl")
+    FEATURES_PATH = os.path.join(MODEL_DIR, "selected_features_LGB.pkl")
+    save_model(model, MODEL_PATH)
+    save_features(selected_features, FEATURES_PATH)
+
+    print("Entraînement terminé et fichiers sauvegardés !")
+    
 
 
 

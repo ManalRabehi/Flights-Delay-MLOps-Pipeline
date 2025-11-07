@@ -5,7 +5,7 @@ import os
 
 
 def preprocess_data(
-    input_path="data/raw/flight_data_2024.csv",
+    input_path="data/raw/flight_data_2024_sample.csv",
     output_path="data/processed/processed_data.csv"
 ):
     print("Chargement des données brutes...")
@@ -103,6 +103,8 @@ def preprocess_data(
         'wheels_on_hhmm', 'crs_arr_time_hhmm', 'arr_time_hhmm'
     ]
     for col in date_cols_full:
+        df_encoded[col] = pd.to_datetime(df_encoded[col], format='%H:%M', errors='coerce')
+        df_encoded.dropna(subset=[col], inplace=True)  # supprime les valeurs non convertibles
         df_encoded[f'{col}_hour'] = df_encoded[col].dt.hour
         df_encoded[f'{col}_minute'] = df_encoded[col].dt.minute
 
@@ -131,5 +133,5 @@ def preprocess_data(
     print(f"Données prétraitées enregistrées dans {output_path}")
 
 
-if __name__== "_main_":
+if __name__== "__main__":
     preprocess_data()
