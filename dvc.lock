@@ -25,14 +25,38 @@ stages:
       size: 3423495
     - path: src/train_model.py
       hash: md5
-      md5: 6b6004f852598350781c048a156d3b53
-      size: 4156
+      md5: 38d302fec1d0399d04e8cfdba0583a4b
+      size: 4334
     outs:
     - path: models/lightgbm_model.pkl
       hash: md5
-      md5: 69123be84960f4fa2f78300b6ab6d773
-      size: 1744996
+      md5: 1a9acfd24ed3ee354a5ba8ef38d8c1b1
+      size: 1738772
     - path: models/selected_features_LGB.pkl
       hash: md5
       md5: d997ee159a73bbae71c91bc9d7a935dd
       size: 308
+  evaluate:
+    cmd: python src/evaluate_model.py
+    deps:
+    - path: data/processed/processed_data.csv
+      hash: md5
+      md5: 36c613faf8b3ab062bf486eb4fa2fbb7
+      size: 3423495
+    - path: models/lightgbm_model.pkl
+      hash: md5
+      md5: 1a9acfd24ed3ee354a5ba8ef38d8c1b1
+      size: 1738772
+    - path: models/selected_features_LGB.pkl
+      hash: md5
+      md5: d997ee159a73bbae71c91bc9d7a935dd
+      size: 308
+    - path: src/evaluate_model.py
+      hash: md5
+      md5: 46642524ecb7b2eeeeb09167b08a41e6
+      size: 1623
+    outs:
+    - path: metrics/metrics.json
+      hash: md5
+      md5: 43b57ac6ff97a474b5d75181dad4a160
+      size: 107
