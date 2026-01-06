@@ -103,13 +103,17 @@ def save_features(features, path="../models/selected_features_LGB.pkl"):
 if __name__== "__main__":
     X, y = load_data()
     X_train, X_test, y_train, y_test = split_data(X, y, smote=True)
-    model = train_final_model(X_train, y_train)
-    selected_features, feature_importance_df = select_features(model, X_train)
+    temp_model = train_final_model(X_train, y_train)
+    selected_features, feature_importance_df = select_features(temp_model, X_train)
+    X_train_selected = X_train[selected_features]
+    X_test_selected = X_test[selected_features]
+    final_model = train_final_model(X_train_selected, y_train)
+
     MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models")
     os.makedirs(MODEL_DIR, exist_ok=True)
     MODEL_PATH = os.path.join(MODEL_DIR, "lightgbm_model.pkl")
     FEATURES_PATH = os.path.join(MODEL_DIR, "selected_features_LGB.pkl")
-    save_model(model, MODEL_PATH)
+    save_model(final_model, MODEL_PATH)
     save_features(selected_features, FEATURES_PATH)
 
     print("Entraînement terminé et fichiers sauvegardés !")
