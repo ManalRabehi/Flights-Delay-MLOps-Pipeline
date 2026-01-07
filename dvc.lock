@@ -30,8 +30,9 @@ stages:
     outs:
     - path: models/lightgbm_model.pkl
       hash: md5
-      md5: bc13b0ddc0c49d7c429c085ca93f7b8d
-      size: 1738756
+      md5: f0c66b382457a29146cd7fcb5baaa5b8
+      size: 1738740
+
     - path: models/selected_features_LGB.pkl
       hash: md5
       md5: d997ee159a73bbae71c91bc9d7a935dd
@@ -45,8 +46,13 @@ stages:
       size: 3423491
     - path: models/lightgbm_model.pkl
       hash: md5
+<<<<<<< HEAD
       md5: bc13b0ddc0c49d7c429c085ca93f7b8d
       size: 1738756
+=======
+      md5: f0c66b382457a29146cd7fcb5baaa5b8
+      size: 1738740
+>>>>>>> 70782d98d0b225f0c8b25a29c29ae935d151b9f6
     - path: models/selected_features_LGB.pkl
       hash: md5
       md5: d997ee159a73bbae71c91bc9d7a935dd
