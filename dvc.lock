@@ -9,8 +9,8 @@ stages:
       size: 1860582
     - path: src/data_preparation.py
       hash: md5
-      md5: f734ac83c408dd67b036cdf8eca030f1
-      size: 5514
+      md5: f2505b7a3e53593a49103bb1161823cc
+      size: 5673
     outs:
     - path: data/processed/processed_data.csv
       hash: md5
@@ -30,9 +30,8 @@ stages:
     outs:
     - path: models/lightgbm_model.pkl
       hash: md5
-      md5: f0c66b382457a29146cd7fcb5baaa5b8
-      size: 1738740
-
+      md5: bc13b0ddc0c49d7c429c085ca93f7b8d
+      size: 1738756
     - path: models/selected_features_LGB.pkl
       hash: md5
       md5: d997ee159a73bbae71c91bc9d7a935dd
@@ -46,13 +45,8 @@ stages:
       size: 3423491
     - path: models/lightgbm_model.pkl
       hash: md5
-<<<<<<< HEAD
       md5: bc13b0ddc0c49d7c429c085ca93f7b8d
       size: 1738756
-=======
-      md5: f0c66b382457a29146cd7fcb5baaa5b8
-      size: 1738740
->>>>>>> 70782d98d0b225f0c8b25a29c29ae935d151b9f6
     - path: models/selected_features_LGB.pkl
       hash: md5
       md5: d997ee159a73bbae71c91bc9d7a935dd

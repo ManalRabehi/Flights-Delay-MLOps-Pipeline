@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 import os
+import joblib
 
 
 def preprocess_data(
@@ -77,16 +78,18 @@ def preprocess_data(
         labels=['winter', 'spring', 'summer', 'fall'],
         include_lowest=True
     )
-
+    encoders= {}
     # Encodage des variables catégorielles
     cat_encode = [
         'op_unique_carrier', 'origin', 'origin_city_name',
         'origin_state_nm', 'dest', 'dest_city_name', 'dest_state_nm', 'season'
     ]
+
     df_encoded = df.copy()
     for col in cat_encode:
         enc = LabelEncoder()
         df_encoded[col] = enc.fit_transform(df_encoded[col].astype(str))
+        encoders[col]= enc
 
     # Standardisation des variables numériques continues
     num_col = [
@@ -131,7 +134,8 @@ def preprocess_data(
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     df_encoded.to_csv(output_path, index=False)
     print(f"Données prétraitées enregistrées dans {output_path}")
-
-
+    joblib.dump(encoders, "models/encoders.pkl")
+    joblib.dump(scaler, "models/scaler.pkl")
+    
 if __name__== "__main__":
     preprocess_data()
