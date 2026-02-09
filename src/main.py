@@ -1,37 +1,24 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import joblib
 import pandas as pd
 from datetime import datetime
 
-app = FastAPI(title="Flight Delay Prediction API")
+# =========================
+# UTILITAIRES
+# =========================
 
-# Charger modèle et outils
-model = joblib.load("models/lightgbm_model.pkl")
-encoders = joblib.load("models/encoders.pkl")
-selected_features = joblib.load("models/selected_features_LGB.pkl")
+def normalize_text(value: str) -> str:
+    return value.strip()
 
-# =========================
-# INPUT UTILISATEUR (HUMAIN)
-# =========================
-class FlightData(BaseModel):
-    crs_dep_hour: int
-    crs_dep_min: int
-    crs_arr_hour: int
-    crs_arr_min: int
-    flight_date: str  # "YYYY-MM-DD"
-    op_carrier_fl_num: int
-    origin_city_name: str
-    origin_state_nm: str
-    dest_city_name: str
-    dest_state_nm: str
-    
-@app.get("/")
-def home():
-    return {"message": "API de prédiction de retards de vols active. Allez sur /docs pour tester."}
-# =========================
-# FONCTIONS UTILITAIRES
-# =========================
+def safe_encode(encoder, value: str) -> int:
+    """Encode une valeur si elle est connue, sinon retourne -1."""
+    value = normalize_text(value)
+    if value in encoder.classes_:
+        return encoder.transform([value])[0]
+    else:
+        return -1  # <-- Valeur inconnue
+
 def get_season(month: int) -> str:
     if month in [12, 1, 2]:
         return "winter"
@@ -43,20 +30,53 @@ def get_season(month: int) -> str:
         return "fall"
 
 # =========================
-# ENDPOINT DE PRÉDICTION
+# STRUCTURES DE DONNÉES
 # =========================
-@app.post("/predict")
-def predict_delay(flight: FlightData):
+class PredictionResponse(BaseModel):
+    delay_predicted : bool
+    delay_probability : float
 
-    # Date
+class FlightData(BaseModel):
+    crs_dep_hour: int = Field(..., example=14)
+    crs_dep_min: int = Field(..., example=30)
+    crs_arr_hour: int = Field(..., example=16)
+    crs_arr_min: int = Field(..., example=10)
+    flight_date: str = Field(..., example="2024-07-15")
+    op_carrier_fl_num: int = Field(..., example=1234)
+    origin_city_name: str = Field(..., example="New York")
+    origin_state_nm: str = Field(..., example="New York")
+    dest_city_name: str = Field(..., example="Los Angeles")
+    dest_state_nm: str = Field(..., example="California")
+
+# =========================
+# INITIALISATION DE L'API
+# =========================
+app = FastAPI(title="Flight Delay Prediction API")
+
+# Charger modèle et outils
+model = joblib.load("models/lightgbm_model.pkl")
+encoders = joblib.load("models/encoders.pkl")
+selected_features = joblib.load("models/selected_features_LGB.pkl")
+medians = joblib.load("models/median_values.pkl")  # médianes calculées lors du preprocessing
+
+@app.get("/")
+def home():
+    return {"message": "API de prédiction de retards de vols active. Allez sur /docs pour tester."}
+
+# =========================
+# ROUTE DE PREDICTION
+# =========================
+@app.post("/predict", response_model=PredictionResponse)
+def predict_delay(flight: FlightData):
+    # --- Features temporelles ---
     date = datetime.strptime(flight.flight_date, "%Y-%m-%d")
     fl_month = date.month
     fl_day = date.day
     fl_dayofweek = date.weekday()
     is_weekend = 1 if fl_dayofweek in [5, 6] else 0
-    season = get_season(fl_month)
+    season = get_season(fl_month).lower()
 
-    # Encodage catégoriel
+    # --- Construction du dictionnaire de features ---
     data = {
         "crs_dep_hour": flight.crs_dep_hour,
         "crs_dep_min": flight.crs_dep_min,
@@ -67,20 +87,30 @@ def predict_delay(flight: FlightData):
         "fl_dayofweek": fl_dayofweek,
         "is_weekend": is_weekend,
         "op_carrier_fl_num": flight.op_carrier_fl_num,
-        "season": encoders["season"].transform([season])[0],
-        "origin_city_name": encoders["origin_city_name"].transform([flight.origin_city_name])[0],
-        "origin_state_nm": encoders["origin_state_nm"].transform([flight.origin_state_nm])[0],
-        "dest_city_name": encoders["dest_city_name"].transform([flight.dest_city_name])[0],
-        "dest_state_nm": encoders["dest_state_nm"].transform([flight.dest_state_nm])[0],
+        "season": safe_encode(encoders["season"], season),
+        "origin_city_name": safe_encode(encoders["origin_city_name"], flight.origin_city_name),
+        "origin_state_nm": safe_encode(encoders["origin_state_nm"], flight.origin_state_nm),
+        "dest_city_name": safe_encode(encoders["dest_city_name"], flight.dest_city_name),
+        "dest_state_nm": safe_encode(encoders["dest_state_nm"], flight.dest_state_nm),
     }
 
-    df = pd.DataFrame([data])
+    # --- Colonnes numériques manquantes ---
+    for col in selected_features:
+        if col not in data:
+            data[col] = medians.get(col, 0)
 
-    # S'assurer de l'ordre exact des features
+    df = pd.DataFrame([data])
     df = df[selected_features]
 
+    # --- DEBUG ---
+    unknowns = {col: val for col, val in df.iloc[0].items() if val == -1}
+    if unknowns:
+        print("⚠️ Valeurs encodées comme inconnues:", unknowns)
+
+    # --- Prédiction ---
+    print(df.head())
     prediction = model.predict(df)[0]
-    proba = model.predict_proba(df)[0][1]
+    proba = model.predict_proba(df)[0, 1]
 
     return {
         "delay_predicted": bool(prediction),
