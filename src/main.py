@@ -43,9 +43,9 @@ class FlightData(BaseModel):
     crs_arr_min: int = Field(..., example=10)
     flight_date: str = Field(..., example="2024-07-15")
     op_carrier_fl_num: int = Field(..., example=1234)
-    origin_city_name: str = Field(..., example="New York")
+    origin_city_name: str = Field(..., example="New York, NY")
     origin_state_nm: str = Field(..., example="New York")
-    dest_city_name: str = Field(..., example="Los Angeles")
+    dest_city_name: str = Field(..., example="Los Angeles, CA")
     dest_state_nm: str = Field(..., example="California")
 
 # =========================
