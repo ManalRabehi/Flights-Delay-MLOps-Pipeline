@@ -3,10 +3,15 @@ from pydantic import BaseModel, Field
 import joblib
 import pandas as pd
 from datetime import datetime
+import os 
 
 # =========================
 # UTILITAIRES
 # =========================
+
+LOG_CSV_PATH = "../logs/predictions_log.csv"
+os.makedirs(os.path.dirname(LOG_CSV_PATH), exist_ok=True)
+
 
 def normalize_text(value: str) -> str:
     return value.strip()
@@ -47,6 +52,8 @@ class FlightData(BaseModel):
     origin_state_nm: str = Field(..., example="New York")
     dest_city_name: str = Field(..., example="Los Angeles, CA")
     dest_state_nm: str = Field(..., example="California")
+    distance: float = Field(..., example=2450.0)
+    crs_elapsed_time: float = Field(..., example=260.0)
 
 # =========================
 # INITIALISATION DE L'API
@@ -92,6 +99,8 @@ def predict_delay(flight: FlightData):
         "origin_state_nm": safe_encode(encoders["origin_state_nm"], flight.origin_state_nm),
         "dest_city_name": safe_encode(encoders["dest_city_name"], flight.dest_city_name),
         "dest_state_nm": safe_encode(encoders["dest_state_nm"], flight.dest_state_nm),
+        "distance": flight.distance,
+        "crs_elapsed_time": flight.crs_elapsed_time
     }
 
     # --- Colonnes numériques manquantes ---
@@ -111,6 +120,36 @@ def predict_delay(flight: FlightData):
     print(df.head())
     prediction = model.predict(df)[0]
     proba = model.predict_proba(df)[0, 1]
+
+    log_row = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "crs_dep_hour": flight.crs_dep_hour,
+    "crs_dep_min": flight.crs_dep_min,
+    "crs_arr_hour": flight.crs_arr_hour,
+    "crs_arr_min": flight.crs_arr_min,
+    "flight_date": flight.flight_date,
+    "op_carrier_fl_num": flight.op_carrier_fl_num,
+    "origin_city_name": flight.origin_city_name,
+    "origin_state_nm": flight.origin_state_nm,
+    "dest_city_name": flight.dest_city_name,
+    "dest_state_nm": flight.dest_state_nm,
+    "distance": flight.distance,
+    "crs_elapsed_time": flight.crs_elapsed_time,
+    "predicted_delay": int(prediction),
+    "predicted_probability": round(float(proba), 3)
+
+    }
+    log_df = pd.DataFrame([log_row])
+
+    if not os.path.isfile(LOG_CSV_PATH):
+        log_df.to_csv(LOG_CSV_PATH, index=False)  # crée le fichier avec les bons headers
+    else:
+        log_df.to_csv(LOG_CSV_PATH, mode='a', header=False, index=False)  # append sans réécrire le header
+
+    # Log console
+    print(f"[{log_row['timestamp']}] Prédiction pour {flight.origin_city_name} -> {flight.dest_city_name} : "
+          f"retard = {prediction} (proba = {round(float(proba),3)})")
+
 
     return {
         "delay_predicted": bool(prediction),

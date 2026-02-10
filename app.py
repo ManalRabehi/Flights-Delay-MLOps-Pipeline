@@ -27,6 +27,8 @@ with st.form("flight_form"):
         op_carrier_fl_num = st.number_input("Numéro du vol", min_value=1, step=1)
         origin_city_name = st.text_input("Ville de départ", "New York, NY")
         origin_state_nm = st.text_input("État de départ", "New York")
+        distance = st.number_input("Distance du vol (miles)", min_value=0.0, step=1.0, value=2450.0)
+
     with col2:
         dest_city_name = st.text_input("Ville d'arrivée", "Los Angeles, CA")
         dest_state_nm = st.text_input("État d'arrivée", "California")
@@ -34,6 +36,8 @@ with st.form("flight_form"):
         crs_dep_min = st.number_input("Minute départ (0-59)", min_value=0, max_value=59)
         crs_arr_hour = st.number_input("Heure arrivée (0-23)", min_value=0, max_value=23)
         crs_arr_min = st.number_input("Minute arrivée (0-59)", min_value=0, max_value=59)
+        crs_elapsed_time = st.number_input("Durée prévue du vol (minutes)", min_value=0.0, step=1.0, value=260.0)
+
 
     submitted = st.form_submit_button("Prédire le retard")
 
@@ -66,7 +70,9 @@ if submitted:
             "crs_dep_hour": crs_dep_hour,
             "crs_dep_min": crs_dep_min,
             "crs_arr_hour": crs_arr_hour,
-            "crs_arr_min": crs_arr_min
+            "crs_arr_min": crs_arr_min,
+            "distance" : distance,
+            "crs_elapsed_time": crs_elapsed_time
         }
 
         try:
