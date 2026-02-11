@@ -4,14 +4,53 @@ import joblib
 import pandas as pd
 from datetime import datetime
 import os 
+import sqlite3
+from fastapi.responses import FileResponse
+
+
+
+
+# Base de données #
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+
+DB_DIR = os.path.join(PROJECT_ROOT, "baseDonnees")
+os.makedirs(DB_DIR, exist_ok=True)
+
+DB_PATH = os.path.join(DB_DIR, "predictions.db")
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS predictions (
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            crs_dep_hour INTEGER,
+            crs_dep_min INTEGER,
+            crs_arr_hour INTEGER,
+            crs_arr_min INTEGER,
+            flight_date TEXT,
+            op_carrier_fl_num INTEGER,
+            origin_city_name TEXT,
+            origin_state_nm TEXT,
+            dest_city_name TEXT,
+            dest_state_nm TEXT,
+            distance REAL,
+            crs_elapsed_time REAL,
+            predicted_delay INTEGER,
+            predicted_probability REAL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
 
 # =========================
 # UTILITAIRES
 # =========================
-
-LOG_CSV_PATH = "../logs/predictions_log.csv"
-os.makedirs(os.path.dirname(LOG_CSV_PATH), exist_ok=True)
-
 
 def normalize_text(value: str) -> str:
     return value.strip()
@@ -70,6 +109,17 @@ medians = joblib.load("models/median_values.pkl")  # médianes calculées lors d
 def home():
     return {"message": "API de prédiction de retards de vols active. Allez sur /docs pour tester."}
 
+@app.get("/download-logs")
+def download_logs():
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query("SELECT * FROM predictions", conn)
+    conn.close()
+
+    csv_path = os.path.join(BASE_DIR, "predictions_export.csv")
+    df.to_csv(csv_path, index=False)
+
+    return FileResponse(csv_path, media_type='text/csv', filename="predictions_log.csv")
+
 # =========================
 # ROUTE DE PREDICTION
 # =========================
@@ -121,33 +171,54 @@ def predict_delay(flight: FlightData):
     prediction = model.predict(df)[0]
     proba = model.predict_proba(df)[0, 1]
 
-    log_row = {
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    "crs_dep_hour": flight.crs_dep_hour,
-    "crs_dep_min": flight.crs_dep_min,
-    "crs_arr_hour": flight.crs_arr_hour,
-    "crs_arr_min": flight.crs_arr_min,
-    "flight_date": flight.flight_date,
-    "op_carrier_fl_num": flight.op_carrier_fl_num,
-    "origin_city_name": flight.origin_city_name,
-    "origin_state_nm": flight.origin_state_nm,
-    "dest_city_name": flight.dest_city_name,
-    "dest_state_nm": flight.dest_state_nm,
-    "distance": flight.distance,
-    "crs_elapsed_time": flight.crs_elapsed_time,
-    "predicted_delay": int(prediction),
-    "predicted_probability": round(float(proba), 3)
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    }
-    log_df = pd.DataFrame([log_row])
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
 
-    if not os.path.isfile(LOG_CSV_PATH):
-        log_df.to_csv(LOG_CSV_PATH, index=False)  # crée le fichier avec les bons headers
-    else:
-        log_df.to_csv(LOG_CSV_PATH, mode='a', header=False, index=False)  # append sans réécrire le header
+    cursor.execute("""
+    INSERT INTO predictions (
+        timestamp,
+        crs_dep_hour,
+        crs_dep_min,
+        crs_arr_hour,
+        crs_arr_min,
+        flight_date,
+        op_carrier_fl_num,
+        origin_city_name,
+        origin_state_nm,
+        dest_city_name,
+        dest_state_nm,
+        distance,
+        crs_elapsed_time,
+        predicted_delay,
+        predicted_probability
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+""", (
+    timestamp,
+    flight.crs_dep_hour,
+    flight.crs_dep_min,
+    flight.crs_arr_hour,
+    flight.crs_arr_min,
+    flight.flight_date,
+    flight.op_carrier_fl_num,
+    flight.origin_city_name,
+    flight.origin_state_nm,
+    flight.dest_city_name,
+    flight.dest_state_nm,
+    flight.distance,
+    flight.crs_elapsed_time,
+    int(prediction),
+    float(proba)
+))
 
+    conn.commit()
+    conn.close()
+
+    
     # Log console
-    print(f"[{log_row['timestamp']}] Prédiction pour {flight.origin_city_name} -> {flight.dest_city_name} : "
+    print(f"[{timestamp}] Prédiction pour {flight.origin_city_name} -> {flight.dest_city_name} : "
           f"retard = {prediction} (proba = {round(float(proba),3)})")
 
 
