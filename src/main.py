@@ -79,20 +79,20 @@ def get_season(month: int) -> str:
 class PredictionResponse(BaseModel):
     delay_predicted : bool
     delay_probability : float
-
+    
 class FlightData(BaseModel):
-    crs_dep_hour: int = Field(..., example=14)
-    crs_dep_min: int = Field(..., example=30)
-    crs_arr_hour: int = Field(..., example=16)
-    crs_arr_min: int = Field(..., example=10)
-    flight_date: str = Field(..., example="2024-07-15")
-    op_carrier_fl_num: int = Field(..., example=1234)
-    origin_city_name: str = Field(..., example="New York, NY")
-    origin_state_nm: str = Field(..., example="New York")
-    dest_city_name: str = Field(..., example="Los Angeles, CA")
-    dest_state_nm: str = Field(..., example="California")
-    distance: float = Field(..., example=2450.0)
-    crs_elapsed_time: float = Field(..., example=260.0)
+    crs_dep_hour: int = Field(..., ge=0, le=23, example=14)
+    crs_dep_min: int = Field(..., ge=0, le=59, example=30)
+    crs_arr_hour: int = Field(..., ge=0, le=23, example=16)
+    crs_arr_min: int = Field(..., ge=0, le=59, example=10)
+    flight_date: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$", example="2024-07-15")
+    op_carrier_fl_num: int = Field(..., ge=1, example=1234)
+    origin_city_name: str = Field(..., max_length=100, pattern=r'^[\w\s,.-]+$', example="New York, NY")
+    origin_state_nm: str = Field(..., max_length=50, pattern=r'^[\w\s.-]+$', example="New York")
+    dest_city_name: str = Field(..., max_length=100, pattern=r'^[\w\s,.-]+$', example="Los Angeles, CA")
+    dest_state_nm: str = Field(..., max_length=50, pattern=r'^[\w\s.-]+$', example="California")
+    distance: float = Field(..., ge=0, example=2450.0)
+    crs_elapsed_time: float = Field(..., ge=0, example=260.0)
 
 # =========================
 # INITIALISATION DE L'API
