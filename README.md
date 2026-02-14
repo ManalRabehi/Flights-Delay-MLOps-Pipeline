@@ -140,7 +140,13 @@ http://127.0.0.1:8000/download-logs
 
 ## Resultats
 
-A remplir avec les images
+- **Visuel interface graphique**
+![Visuel interface graphique](image/Interface.png)
+
+- **Visuel résultat**
+  
+![Visuel résultat](image/Résultat.png)
+
 
 ### Sécurité
 Pour la protection de l’application, des mesures contre les injections SQL et les attaques XSS ont été mises en place.
