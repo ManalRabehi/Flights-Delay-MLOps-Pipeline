@@ -59,7 +59,7 @@ if submitted:
     elif not check_city_format(dest_city_name):
         st.error("⚠️ La ville d'arrivée doit être au format 'City, ST', ex: 'Los Angeles, CA'.")
     else:
-        url = "http://127.0.0.1:8000/predict"
+        url = "http://api:8000/predict"
         payload = {
             "flight_date": flight_date.strftime("%Y-%m-%d"),
             "op_carrier_fl_num": op_carrier_fl_num,

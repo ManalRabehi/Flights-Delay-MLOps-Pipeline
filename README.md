@@ -137,6 +137,29 @@ Pour télécharger l’historique des prédictions sous forme de fichier CSV, ac
 
 http://127.0.0.1:8000/download-logs
 
+## Lancer le projet avec Docker
+
+Si vous préférez utiliser Docker, vous pouvez exécuter l'API et l'interface Streamlit dans des conteneurs isolés. 
+
+### Construire et démarrer les conteneurs
+```bash
+docker compose up --build
+```
+Cette commande va : 
+- Construire l'image Docker pour l'API FastAPI et pour Streamlit
+- Lancer les deux services dans des conteneurs distincts
+- Mapper les ports 8000 (API) et 8501 (interface) vers votre machine.
+
+### Accéder aux services 
+
+**API FastAPI** : http://localhost:8000
+**Interface Streamlit** : http://localhost:8501
+
+### Arrêter es conteneurs 
+
+```bash
+docker compose down
+```
 
 ## Resultats
 

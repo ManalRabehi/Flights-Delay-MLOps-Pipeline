@@ -61,7 +61,7 @@ python-dateutil==2.9.0.post0
 pytz==2025.2
 pyzmq==27.1.0
 requests==2.32.5
-scikit-learn==1.6.1
+scikit-learn==1.8.0
 scipy==1.15.2
 setuptools==80.9.0
 six==1.17.0
@@ -87,3 +87,6 @@ wcwidth==0.2.14
 weasel==0.4.3
 wrapt==2.0.1
 imbalanced-learn
+uvicorn[standard]
+fastapi
+streamlit
