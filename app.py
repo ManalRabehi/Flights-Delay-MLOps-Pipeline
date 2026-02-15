@@ -15,7 +15,7 @@ Remplissez les informations du vol ci-dessous et cliquez sur **Prédire le retar
 """
 )
 
-# ======================
+
 # Formulaire des informations du vol
 # ======================
 with st.form("flight_form"):
@@ -41,7 +41,7 @@ with st.form("flight_form"):
 
     submitted = st.form_submit_button("Prédire le retard")
 
-# ======================
+
 # Fonction de validation
 # ======================
 def check_city_format(city: str) -> bool:
@@ -49,11 +49,10 @@ def check_city_format(city: str) -> bool:
     pattern = r"^[A-Za-z\s]+,\s?[A-Z]{2}$"
     return bool(re.match(pattern, city.strip()))
 
-# ======================
+
 # Action lorsque le formulaire est soumis
 # ======================
 if submitted:
-    # Vérification du format des villes
     if not check_city_format(origin_city_name):
         st.error("⚠️ La ville de départ doit être au format 'City, ST', ex: 'New York, NY'.")
     elif not check_city_format(dest_city_name):

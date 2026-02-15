@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 
 
 
-# Base de données #
+# Base de données 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 
@@ -48,7 +48,6 @@ def init_db():
 
 init_db()
 
-# =========================
 # UTILITAIRES
 # =========================
 
@@ -73,13 +72,13 @@ def get_season(month: int) -> str:
     else:
         return "fall"
 
-# =========================
+
 # STRUCTURES DE DONNÉES
 # =========================
 class PredictionResponse(BaseModel):
     delay_predicted : bool
     delay_probability : float
-    
+
 class FlightData(BaseModel):
     crs_dep_hour: int = Field(..., ge=0, le=23, example=14)
     crs_dep_min: int = Field(..., ge=0, le=59, example=30)
@@ -94,7 +93,7 @@ class FlightData(BaseModel):
     distance: float = Field(..., ge=0, example=2450.0)
     crs_elapsed_time: float = Field(..., ge=0, example=260.0)
 
-# =========================
+
 # INITIALISATION DE L'API
 # =========================
 app = FastAPI(title="Flight Delay Prediction API")
@@ -120,7 +119,7 @@ def download_logs():
 
     return FileResponse(csv_path, media_type='text/csv', filename="predictions_log.csv")
 
-# =========================
+
 # ROUTE DE PREDICTION
 # =========================
 @app.post("/predict", response_model=PredictionResponse)
@@ -133,7 +132,7 @@ def predict_delay(flight: FlightData):
     is_weekend = 1 if fl_dayofweek in [5, 6] else 0
     season = get_season(fl_month).lower()
 
-    # --- Construction du dictionnaire de features ---
+    # Construction du dictionnaire de features 
     data = {
         "crs_dep_hour": flight.crs_dep_hour,
         "crs_dep_min": flight.crs_dep_min,
@@ -153,7 +152,7 @@ def predict_delay(flight: FlightData):
         "crs_elapsed_time": flight.crs_elapsed_time
     }
 
-    # --- Colonnes numériques manquantes ---
+    # Colonnes numériques manquantes 
     for col in selected_features:
         if col not in data:
             data[col] = medians.get(col, 0)
@@ -161,12 +160,12 @@ def predict_delay(flight: FlightData):
     df = pd.DataFrame([data])
     df = df[selected_features]
 
-    # --- DEBUG ---
+    # DEBUG 
     unknowns = {col: val for col, val in df.iloc[0].items() if val == -1}
     if unknowns:
         print("⚠️ Valeurs encodées comme inconnues:", unknowns)
 
-    # --- Prédiction ---
+    # Prédiction 
     print(df.head())
     prediction = model.predict(df)[0]
     proba = model.predict_proba(df)[0, 1]
